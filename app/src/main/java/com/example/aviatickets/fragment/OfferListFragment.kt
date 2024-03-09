@@ -1,5 +1,4 @@
 package com.example.aviatickets.fragment
-
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -8,8 +7,11 @@ import android.view.ViewGroup
 import com.example.aviatickets.R
 import com.example.aviatickets.adapter.OfferListAdapter
 import com.example.aviatickets.databinding.FragmentOfferListBinding
-import com.example.aviatickets.model.service.FakeService
-
+import com.example.aviatickets.model.entity.Offer
+import com.example.aviatickets.model.network.ApiClient
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class OfferListFragment : Fragment() {
 
@@ -29,7 +31,7 @@ class OfferListFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        _binding = FragmentOfferListBinding.inflate(layoutInflater, container, false)
+        _binding = FragmentOfferListBinding.inflate(inflater, container, false)
         return _binding?.root
     }
 
@@ -37,7 +39,7 @@ class OfferListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupUI()
-        adapter.setItems(FakeService.offerList)
+        fetchOffers()
     }
 
     private fun setupUI() {
@@ -47,18 +49,39 @@ class OfferListFragment : Fragment() {
             sortRadioGroup.setOnCheckedChangeListener { _, checkedId ->
                 when (checkedId) {
                     R.id.sort_by_price -> {
-                        /**
-                         * implement sorting by price
-                         */
+                        adapter.sortByPrice()
                     }
 
                     R.id.sort_by_duration -> {
-                        /**
-                         * implement sorting by duration
-                         */
+                        adapter.sortByDuration()
                     }
                 }
             }
         }
     }
+
+    private fun fetchOffers() {
+        val call = ApiClient.apiService.getOffers()
+        call.enqueue(object : Callback<List<Offer>> {
+            override fun onResponse(call: Call<List<Offer>>, response: Response<List<Offer>>) {
+                if (response.isSuccessful) {
+                    response.body()?.let { offers ->
+                        adapter.updateItems(offers)
+                    }
+                } else {
+                    // Handle unsuccessful response
+                }
+            }
+
+            override fun onFailure(call: Call<List<Offer>>, t: Throwable) {
+                // Handle failure
+            }
+        })
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
 }
